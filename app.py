@@ -1192,7 +1192,8 @@ elif page == "Cross-Market Funding":
             list(cross.columns),
             f"{cp_type} CP − {benchmark}",
             "Basis points",
-            zero_line=True
+            zero_line=True,
+            robust_y=(cross_y == "Robust")
         ),
         use_container_width=True
     )
@@ -1340,7 +1341,8 @@ elif page == "Persistence":
             [ar_col, ar3_col],
             f"{maturity} Rolling AR(1)",
             "AR(1)",
-            zero_line=False
+            zero_line=False,
+            robust_y=(persistence_y == "Robust")
         ),
         use_container_width=True
     )
@@ -1356,7 +1358,9 @@ elif page == "Persistence":
             [hl_col, hl3_col],
             f"{maturity} Rolling AR(1)-Implied Mean-Reversion Half-Life",
             "Observations",
-            zero_line=False
+            zero_line=False,
+            robust_y=(persistence_y == "Robust"),
+            nonnegative_y=True
         ),
         use_container_width=True
     )

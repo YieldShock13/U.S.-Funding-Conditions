@@ -237,6 +237,7 @@ page = st.sidebar.radio(
         "Overview",
         "Funding Basis",
         "Commercial Paper",
+        "Cross-Market Funding",
         "Persistence",
         "Data & Methodology"
     ]
@@ -658,6 +659,268 @@ elif page == "Commercial Paper":
             zero_line=True
         ),
         use_container_width=True
+    )
+
+
+# ============================================================
+# CROSS-MARKET FUNDING
+# ============================================================
+
+elif page == "Cross-Market Funding":
+
+    st.subheader("Commercial Paper vs Overnight Funding")
+
+    st.caption(
+        "Compares term commercial-paper rates with overnight "
+        "money-market benchmarks. These spreads contain credit, "
+        "liquidity and maturity / expected-policy-rate effects "
+        "and should not be interpreted as pure credit spreads."
+    )
+
+    # --------------------------------------------------------
+    # BENCHMARK SELECTION
+    # --------------------------------------------------------
+
+    benchmark = st.radio(
+        "Overnight benchmark",
+        ["SOFR", "EFFR"],
+        horizontal=True
+    )
+
+    cp_type = st.radio(
+        "Commercial-paper category",
+        [
+            "AA Financial",
+            "AA Nonfinancial",
+            "A2/P2 Nonfinancial"
+        ],
+        horizontal=True
+    )
+
+
+    # --------------------------------------------------------
+    # MAP CP SERIES
+    # --------------------------------------------------------
+
+    cp_map = {
+
+        "AA Financial": {
+            "30D": "AA_FIN_30D",
+            "60D": "AA_FIN_60D",
+            "90D": "AA_FIN_90D"
+        },
+
+        "AA Nonfinancial": {
+            "30D": "AA_NF_30D",
+            "60D": "AA_NF_60D",
+            "90D": "AA_NF_90D"
+        },
+
+        "A2/P2 Nonfinancial": {
+            "30D": "A2P2_NF_30D",
+            "60D": "A2P2_NF_60D",
+            "90D": "A2P2_NF_90D"
+        }
+    }
+
+
+    # --------------------------------------------------------
+    # CONSTRUCT PAIRWISE SPREADS
+    #
+    # No forward filling.
+    # Each tenor uses dates where BOTH series are observed.
+    # --------------------------------------------------------
+
+    cross = pd.DataFrame()
+
+    for tenor, cp_col in cp_map[cp_type].items():
+
+        pair = pd.concat(
+            [
+                rates[cp_col],
+                rates[benchmark]
+            ],
+            axis=1,
+            join="inner"
+        ).dropna()
+
+        cross[
+            f"{tenor} CP − {benchmark}"
+        ] = (
+            pair[cp_col]
+            - pair[benchmark]
+        ) * 100
+
+
+    # --------------------------------------------------------
+    # CURRENT ANALYTICS
+    # --------------------------------------------------------
+
+    rows = []
+
+    for col in cross.columns:
+
+        x = cross[col].dropna()
+
+        if len(x) == 0:
+            continue
+
+        current = x.iloc[-1]
+
+        mean = x.mean()
+        sd = x.std()
+
+        z_full = (
+            (current - mean) / sd
+            if sd > 0
+            else np.nan
+        )
+
+        x1 = x.iloc[-252:]
+
+        sd1 = x1.std()
+
+        z_1y = (
+            (current - x1.mean()) / sd1
+            if len(x1) > 1 and sd1 > 0
+            else np.nan
+        )
+
+        percentile = (
+            (x <= current).mean() * 100
+        )
+
+        rows.append({
+
+            "Spread": col,
+
+            "Date":
+                x.index[-1].date(),
+
+            "Current (bp)":
+                current,
+
+            "Historical Mean (bp)":
+                mean,
+
+            "Historical Percentile":
+                percentile,
+
+            "Full Z":
+                z_full,
+
+            "1Y Z":
+                z_1y,
+
+            "Start":
+                x.index[0].date(),
+
+            "Observations":
+                len(x)
+        })
+
+
+    cross_snapshot = pd.DataFrame(rows)
+
+
+    # --------------------------------------------------------
+    # CURRENT CARDS
+    # --------------------------------------------------------
+
+    if len(cross_snapshot):
+
+        metric_cols = st.columns(
+            len(cross_snapshot)
+        )
+
+        for c, (_, row) in zip(
+            metric_cols,
+            cross_snapshot.iterrows()
+        ):
+
+            with c:
+
+                st.metric(
+                    row["Spread"],
+                    f"{row['Current (bp)']:.0f} bp"
+                )
+
+                st.caption(
+                    f"1Y z: {row['1Y Z']:.2f} | "
+                    f"Pct: {row['Historical Percentile']:.0f}%"
+                )
+
+
+    # --------------------------------------------------------
+    # CHART
+    # --------------------------------------------------------
+
+    st.plotly_chart(
+        line_chart(
+            cross,
+            list(cross.columns),
+            f"{cp_type} CP − {benchmark}",
+            "Basis points",
+            zero_line=True
+        ),
+        use_container_width=True
+    )
+
+
+    # --------------------------------------------------------
+    # ANALYTICS TABLE
+    # --------------------------------------------------------
+
+    st.dataframe(
+        cross_snapshot.round({
+            "Current (bp)": 1,
+            "Historical Mean (bp)": 1,
+            "Historical Percentile": 1,
+            "Full Z": 2,
+            "1Y Z": 2
+        }),
+        use_container_width=True,
+        hide_index=True
+    )
+
+
+    # --------------------------------------------------------
+    # RATE LEVEL COMPARISON
+    # --------------------------------------------------------
+
+    st.divider()
+
+    st.subheader("Rate-Level Comparison")
+
+    level_panel = pd.DataFrame()
+
+    level_panel[benchmark] = rates[benchmark]
+
+    for tenor, cp_col in cp_map[cp_type].items():
+
+        level_panel[
+            f"{cp_type} {tenor}"
+        ] = rates[cp_col]
+
+
+    st.plotly_chart(
+        line_chart(
+            level_panel,
+            list(level_panel.columns),
+            f"{cp_type} vs {benchmark}",
+            "Rate (%)",
+            zero_line=False
+        ),
+        use_container_width=True
+    )
+
+
+    st.info(
+        "Interpretation: CP minus overnight funding is a broad "
+        "corporate funding premium. Because CP is term unsecured "
+        "funding while SOFR is overnight secured funding and EFFR "
+        "is overnight unsecured interbank funding, the spread is "
+        "not a maturity-matched pure credit premium."
     )
 
 

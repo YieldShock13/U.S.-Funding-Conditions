@@ -520,11 +520,12 @@ elif page == "Funding Basis":
         "Spread",
         "End",
         "Current_bp",
-        "Percentile",
+        "Full_Percentile",
+        "Pct_1Y",
         "Z_Full",
         "Z_1Y",
-        "AR1_phi",
-        "HalfLife_obs",
+        "AR1_1Y",
+        "HalfLife_1Y_obs",
         "ADF_p",
         "Regime"
     ]
@@ -535,11 +536,12 @@ elif page == "Funding Basis":
         "Spread",
         "Date",
         "Current (bp)",
-        "Hist. Percentile",
+        "Full-History Percentile",
+        "1Y Percentile",
         "Full Z",
         "1Y Z",
-        "AR(1)",
-        "Half-Life",
+        "1Y AR(1)",
+        "1Y Half-Life (obs.)",
         "ADF p",
         "Regime"
     ]
@@ -548,6 +550,13 @@ elif page == "Funding Basis":
         table,
         use_container_width=True,
         hide_index=True
+    )
+
+
+    st.caption(
+        "1Y statistics use observations occurring within the "
+        "trailing one calendar year. They do not assume 252 "
+        "observations per year."
     )
 
 
@@ -591,9 +600,9 @@ elif page == "Commercial Paper":
             "Z_1Y",
             "Z_3Y",
             "Pct_1Y",
-            "Vol_63D",
+            "Vol_63obs",
             "AR1_1Y",
-            "HalfLife_1Y",
+            "HalfLife_1Y_obs",
             "Regime"
         ]
     ]
@@ -605,9 +614,9 @@ elif page == "Commercial Paper":
         "1Y Z",
         "3Y Z",
         "1Y Percentile",
-        "63D Vol",
+        "63-Observation Vol",
         "1Y AR(1)",
-        "1Y Half-Life",
+        "1Y Half-Life (obs.)",
         "Regime"
     ]
 
@@ -668,7 +677,7 @@ elif page == "Commercial Paper":
 
 elif page == "Cross-Market Funding":
 
-    st.subheader("Commercial Paper vs Overnight Funding")
+    st.subheader("CP–Overnight Funding Differentials")
 
     st.caption(
         "Compares term commercial-paper rates with overnight "
@@ -776,7 +785,13 @@ elif page == "Cross-Market Funding":
             else np.nan
         )
 
-        x1 = x.iloc[-252:]
+        # Genuine trailing calendar year.
+        end_1y = x.index[-1]
+        start_1y = end_1y - pd.DateOffset(years=1)
+
+        x1 = x.loc[
+            x.index >= start_1y
+        ]
 
         sd1 = x1.std()
 
@@ -786,8 +801,14 @@ elif page == "Cross-Market Funding":
             else np.nan
         )
 
-        percentile = (
+        full_percentile = (
             (x <= current).mean() * 100
+        )
+
+        pct_1y = (
+            (x1 <= current).mean() * 100
+            if len(x1)
+            else np.nan
         )
 
         rows.append({
@@ -803,8 +824,14 @@ elif page == "Cross-Market Funding":
             "Historical Mean (bp)":
                 mean,
 
-            "Historical Percentile":
-                percentile,
+            "Full-History Percentile":
+                full_percentile,
+
+            "1Y Percentile":
+                pct_1y,
+
+            "1Y Observations":
+                len(x1),
 
             "Full Z":
                 z_full,
@@ -847,7 +874,7 @@ elif page == "Cross-Market Funding":
 
                 st.caption(
                     f"1Y z: {row['1Y Z']:.2f} | "
-                    f"Pct: {row['Historical Percentile']:.0f}%"
+                    f"1Y pct: {row['1Y Percentile']:.0f}%"
                 )
 
 
@@ -875,7 +902,8 @@ elif page == "Cross-Market Funding":
         cross_snapshot.round({
             "Current (bp)": 1,
             "Historical Mean (bp)": 1,
-            "Historical Percentile": 1,
+            "Full-History Percentile": 1,
+            "1Y Percentile": 1,
             "Full Z": 2,
             "1Y Z": 2
         }),
@@ -917,7 +945,7 @@ elif page == "Cross-Market Funding":
 
     st.info(
         "Interpretation: CP minus overnight funding is a broad "
-        "corporate funding premium. Because CP is term unsecured "
+        "cross-market funding differential. Because CP is term unsecured "
         "funding while SOFR is overnight secured funding and EFFR "
         "is overnight unsecured interbank funding, the spread is "
         "not a maturity-matched pure credit premium."
@@ -930,7 +958,7 @@ elif page == "Cross-Market Funding":
 
 elif page == "Persistence":
 
-    st.subheader("Commercial-Paper Persistence")
+    st.subheader("Commercial-Paper Persistence & Mean Reversion")
 
     maturity = st.selectbox(
         "Maturity",
@@ -938,10 +966,10 @@ elif page == "Persistence":
     )
 
     ar_col = f"CP_{maturity}_AR1_1Y"
-    hl_col = f"CP_{maturity}_HalfLife_1Y"
+    hl_col = f"CP_{maturity}_HalfLife_1Y_obs"
 
     ar3_col = f"CP_{maturity}_AR1_3Y"
-    hl3_col = f"CP_{maturity}_HalfLife_3Y"
+    hl3_col = f"CP_{maturity}_HalfLife_3Y_obs"
 
 
     # --------------------------------------------------------
@@ -961,7 +989,7 @@ elif page == "Persistence":
 
     c2.metric(
         "1Y Half-Life",
-        f"{row['HalfLife_1Y']:.2f} obs."
+        f"{row['HalfLife_1Y_obs']:.2f} obs."
     )
 
     c3.metric(
@@ -971,7 +999,7 @@ elif page == "Persistence":
 
     c4.metric(
         "3Y Half-Life",
-        f"{row['HalfLife_3Y']:.2f} obs."
+        f"{row['HalfLife_3Y_obs']:.2f} obs."
     )
 
 
@@ -999,7 +1027,7 @@ elif page == "Persistence":
         line_chart(
             cp,
             [hl_col, hl3_col],
-            f"{maturity} Rolling Mean-Reversion Half-Life",
+            f"{maturity} Rolling AR(1)-Implied Mean-Reversion Half-Life",
             "Observations",
             zero_line=False
         ),
@@ -1007,7 +1035,10 @@ elif page == "Persistence":
     )
 
     st.caption(
-        "Half-life is reported only where 0 < AR(1) < 1."
+        "AR(1)-implied half-life is reported in observations "
+        "and only where 0 < AR(1) < 1. Windows labelled 1Y "
+        "and 3Y use actual calendar periods, not fixed "
+        "observation counts."
     )
 
 

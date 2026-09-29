@@ -1,27 +1,19 @@
 {
-    "project": "US Funding & Money-Market Monitor",
-    "version": "1.0",
+    "project": "U.S. Funding Conditions",
+    "version": "2.0-audit",
     "units": {
         "raw_rates": "percent",
         "spreads": "basis points",
         "z_scores": "standard deviations",
         "half_life": "observations"
     },
-    "sources": {
-        "SOFR": "Federal Reserve Bank of New York",
-        "TGCR": "Federal Reserve Bank of New York",
-        "BGCR": "Federal Reserve Bank of New York",
-        "EFFR": "Federal Reserve / FRED",
-        "IORB": "Federal Reserve / FRED",
-        "ON_RRP": "Federal Reserve / FRED",
-        "Commercial_Paper": "Federal Reserve Board / FRED; underlying DTCC data"
-    },
     "methodology": {
-        "spread_history": "Each spread uses its own maximum pairwise history.",
-        "cp_composite": "Mean trailing-252-business-day z-score of available 30D, 60D and 90D A2/P2 minus AA nonfinancial CP spreads; minimum two maturities required.",
-        "monitor_alignment": "Monitoring panel permits a maximum five-business-day forward fill. Raw statistical series are not forward filled.",
-        "ar1": "x_t = c + phi*x_(t-1) + error",
-        "half_life": "-ln(2)/ln(phi), reported only for 0 < phi < 1",
-        "adf": "Augmented Dickey-Fuller test with constant and AIC lag selection."
+        "calendar_windows": "Metrics labelled 1Y use observations occurring within the trailing one calendar year. Metrics labelled 3Y use observations occurring within the trailing three calendar years. Observation-count proxies such as 252/756 are not used.",
+        "spread_history": "Each spread uses dates on which both constituent raw series have observations. Statistical spread series are not forward-filled.",
+        "cp_composite": "Mean trailing-one-calendar-year standardized A2/P2 minus AA nonfinancial CP spread across 30D, 60D and 90D maturities. At least two maturities are required.",
+        "monitor_alignment": "The synchronized CP monitoring layer permits a maximum five-business-day forward fill. This alignment is not used when estimating raw-series AR(1), z-score, percentile or ADF statistics.",
+        "ar1": "x_t = c + phi*x_(t-1) + error.",
+        "half_life": "AR(1)-implied mean-reversion half-life = -ln(2)/ln(phi), reported in observations and only where 0 < phi < 1.",
+        "adf": "Augmented Dickey-Fuller test with constant and AIC lag selection on the full raw spread history."
     }
 }

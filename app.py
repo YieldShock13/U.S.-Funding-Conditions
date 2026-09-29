@@ -197,62 +197,12 @@ def load_data(data_version="v2.0-calendar-window"):
 # HELPERS
 # ============================================================
 
-
-def robust_y_range(df, columns, nonnegative=False):
-    """
-    Calculate presentation-only robust y-axis limits.
-    Does NOT alter the underlying observations.
-    """
-
-    available = [c for c in columns if c in df.columns]
-
-    if not available:
-        return None
-
-    values = (
-        df[available]
-        .apply(pd.to_numeric, errors="coerce")
-        .to_numpy()
-        .ravel()
-    )
-
-    values = values[np.isfinite(values)]
-
-    if len(values) < 5:
-        return None
-
-    upper = float(np.nanpercentile(values, 99))
-
-    if nonnegative:
-        lower = 0.0
-    else:
-        lower = float(np.nanpercentile(values, 1))
-
-    if not np.isfinite(lower) or not np.isfinite(upper):
-        return None
-
-    if upper <= lower:
-        return None
-
-    span = upper - lower
-
-    if nonnegative:
-        upper += span * 0.05
-    else:
-        lower -= span * 0.05
-        upper += span * 0.05
-
-    return [lower, upper]
-
-
 def line_chart(
     df,
     columns,
     title,
     ytitle,
-    zero_line=False,
-    robust_y=False,
-    nonnegative_y=False
+    zero_line=False
 ):
 
     fig = go.Figure()
@@ -297,37 +247,7 @@ def line_chart(
         )
     )
 
-
-    # Presentation-only Y-axis scaling.
-    # Underlying observations remain completely unchanged.
-    if robust_y:
-        yrange = robust_y_range(
-            df,
-            columns,
-            nonnegative=nonnegative_y
-        )
-
-        if yrange is not None:
-            fig.update_yaxes(range=yrange)
-
     return fig
-
-
-
-def chart_y_control(key, default="Robust"):
-
-    options = [
-        "Robust",
-        "Full range"
-    ]
-
-    return st.radio(
-        "Y-axis",
-        options,
-        index=options.index(default),
-        horizontal=True,
-        key=f"{key}_yaxis"
-    )
 
 
 def chart_date_control(df, key, default="3Y"):
@@ -773,18 +693,13 @@ elif page == "Funding Basis":
         key="funding_basis"
     )
 
-    basis_y = chart_y_control(
-        key="funding_basis"
-    )
-
     st.plotly_chart(
         line_chart(
             basis_chart,
             selected,
             group,
             "Basis points",
-            zero_line=True,
-            robust_y=(basis_y == "Robust")
+            zero_line=True
         ),
         use_container_width=True
     )
@@ -863,18 +778,13 @@ elif page == "Commercial Paper":
         key="commercial_paper"
     )
 
-    cp_y = chart_y_control(
-        key="commercial_paper"
-    )
-
     st.plotly_chart(
         line_chart(
             cp_chart_data,
             cp_credit_cols,
             "A2/P2 − AA Nonfinancial Commercial Paper",
             "Basis points",
-            zero_line=True,
-            robust_y=(cp_y == "Robust")
+            zero_line=True
         ),
         use_container_width=True
     )
@@ -959,8 +869,7 @@ elif page == "Commercial Paper":
             cols,
             option,
             "Basis points",
-            zero_line=True,
-            robust_y=(cp_y == "Robust")
+            zero_line=True
         ),
         use_container_width=True
     )
@@ -1182,18 +1091,13 @@ elif page == "Cross-Market Funding":
         key="cross_market"
     )
 
-    cross_y = chart_y_control(
-        key="cross_market"
-    )
-
     st.plotly_chart(
         line_chart(
             cross_chart,
             list(cross.columns),
             f"{cp_type} CP − {benchmark}",
             "Basis points",
-            zero_line=True,
-            robust_y=(cross_y == "Robust")
+            zero_line=True
         ),
         use_container_width=True
     )
@@ -1255,8 +1159,7 @@ elif page == "Cross-Market Funding":
             list(level_panel.columns),
             f"{cp_type} vs {benchmark}",
             "Rate (%)",
-            zero_line=False,
-            robust_y=(cross_y == "Robust")
+            zero_line=False
         ),
         use_container_width=True
     )
@@ -1331,18 +1234,13 @@ elif page == "Persistence":
         key="persistence"
     )
 
-    persistence_y = chart_y_control(
-        key="persistence"
-    )
-
     st.plotly_chart(
         line_chart(
             persistence_chart,
             [ar_col, ar3_col],
             f"{maturity} Rolling AR(1)",
             "AR(1)",
-            zero_line=False,
-            robust_y=(persistence_y == "Robust")
+            zero_line=False
         ),
         use_container_width=True
     )
@@ -1358,9 +1256,7 @@ elif page == "Persistence":
             [hl_col, hl3_col],
             f"{maturity} Rolling AR(1)-Implied Mean-Reversion Half-Life",
             "Observations",
-            zero_line=False,
-            robust_y=(persistence_y == "Robust"),
-            nonnegative_y=True
+            zero_line=False
         ),
         use_container_width=True
     )

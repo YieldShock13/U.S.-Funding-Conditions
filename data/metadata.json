@@ -1,0 +1,27 @@
+{
+    "project": "US Funding & Money-Market Monitor",
+    "version": "1.0",
+    "units": {
+        "raw_rates": "percent",
+        "spreads": "basis points",
+        "z_scores": "standard deviations",
+        "half_life": "observations"
+    },
+    "sources": {
+        "SOFR": "Federal Reserve Bank of New York",
+        "TGCR": "Federal Reserve Bank of New York",
+        "BGCR": "Federal Reserve Bank of New York",
+        "EFFR": "Federal Reserve / FRED",
+        "IORB": "Federal Reserve / FRED",
+        "ON_RRP": "Federal Reserve / FRED",
+        "Commercial_Paper": "Federal Reserve Board / FRED; underlying DTCC data"
+    },
+    "methodology": {
+        "spread_history": "Each spread uses its own maximum pairwise history.",
+        "cp_composite": "Mean trailing-252-business-day z-score of available 30D, 60D and 90D A2/P2 minus AA nonfinancial CP spreads; minimum two maturities required.",
+        "monitor_alignment": "Monitoring panel permits a maximum five-business-day forward fill. Raw statistical series are not forward filled.",
+        "ar1": "x_t = c + phi*x_(t-1) + error",
+        "half_life": "-ln(2)/ln(phi), reported only for 0 < phi < 1",
+        "adf": "Augmented Dickey-Fuller test with constant and AIC lag selection."
+    }
+}

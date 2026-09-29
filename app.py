@@ -250,6 +250,124 @@ def line_chart(
     return fig
 
 
+def chart_date_control(df, key, default="3Y"):
+    """
+    Presentation-layer chart filter only.
+
+    This function does NOT recalculate analytics. It only
+    returns a date-filtered view for plotting.
+    """
+
+    if df is None or len(df) == 0:
+        return df
+
+    data = df.copy()
+
+    if not isinstance(data.index, pd.DatetimeIndex):
+        data.index = pd.to_datetime(data.index)
+
+    valid_index = data.index[
+        ~data.index.isna()
+    ]
+
+    if len(valid_index) == 0:
+        return data
+
+    data_start = valid_index.min()
+    data_end = valid_index.max()
+
+    options = [
+        "1M",
+        "3M",
+        "6M",
+        "1Y",
+        "3Y",
+        "5Y",
+        "10Y",
+        "All",
+        "Custom"
+    ]
+
+    if default not in options:
+        default = "3Y"
+
+    period = st.radio(
+        "Chart range",
+        options,
+        index=options.index(default),
+        horizontal=True,
+        key=f"{key}_range"
+    )
+
+    if period == "All":
+        start = data_start
+        end = data_end
+
+    elif period == "Custom":
+
+        c1, c2 = st.columns(2)
+
+        with c1:
+            start_date = st.date_input(
+                "Start date",
+                value=data_start.date(),
+                min_value=data_start.date(),
+                max_value=data_end.date(),
+                key=f"{key}_start"
+            )
+
+        with c2:
+            end_date = st.date_input(
+                "End date",
+                value=data_end.date(),
+                min_value=data_start.date(),
+                max_value=data_end.date(),
+                key=f"{key}_end"
+            )
+
+        start = pd.Timestamp(start_date)
+        end = pd.Timestamp(end_date)
+
+        if start > end:
+            st.warning(
+                "Start date is after end date."
+            )
+            return data.iloc[0:0]
+
+    else:
+
+        offsets = {
+            "1M": pd.DateOffset(months=1),
+            "3M": pd.DateOffset(months=3),
+            "6M": pd.DateOffset(months=6),
+            "1Y": pd.DateOffset(years=1),
+            "3Y": pd.DateOffset(years=3),
+            "5Y": pd.DateOffset(years=5),
+            "10Y": pd.DateOffset(years=10)
+        }
+
+        end = data_end
+        start = end - offsets[period]
+
+    return data.loc[
+        (data.index >= start)
+        & (data.index <= end)
+    ]
+
+
+def filter_chart_data(df, period):
+    """
+    Internal presentation-only filter for cases where the
+    page has already collected the user's range selection.
+    """
+
+    if period is None:
+        return df
+
+    return df
+
+
+
 def get_rate(name):
 
     row = latest_rates[
@@ -479,12 +597,19 @@ if page == "Overview":
     # COMPOSITE CHART
     # --------------------------------------------------------
 
+    composite_chart = chart_date_control(
+        composite.to_frame(
+            name="CP_Stress_Composite"
+        ),
+        key="overview_cp_composite"
+    )["CP_Stress_Composite"].dropna()
+
     fig = go.Figure()
 
     fig.add_trace(
         go.Scatter(
-            x=composite.index,
-            y=composite.values,
+            x=composite_chart.index,
+            y=composite_chart.values,
             mode="lines",
             name="CP Stress Composite"
         )
@@ -563,9 +688,14 @@ elif page == "Funding Basis":
         default=basis_groups[group]
     )
 
+    basis_chart = chart_date_control(
+        spreads,
+        key="funding_basis"
+    )
+
     st.plotly_chart(
         line_chart(
-            spreads,
+            basis_chart,
             selected,
             group,
             "Basis points",
@@ -643,9 +773,14 @@ elif page == "Commercial Paper":
         "A2P2-AA_NF_90D"
     ]
 
+    cp_chart_data = chart_date_control(
+        spreads,
+        key="commercial_paper"
+    )
+
     st.plotly_chart(
         line_chart(
-            spreads,
+            cp_chart_data,
             cp_credit_cols,
             "A2/P2 − AA Nonfinancial Commercial Paper",
             "Basis points",
@@ -730,7 +865,7 @@ elif page == "Commercial Paper":
 
     st.plotly_chart(
         line_chart(
-            spreads,
+            cp_chart_data,
             cols,
             option,
             "Basis points",
@@ -951,9 +1086,14 @@ elif page == "Cross-Market Funding":
     # CHART
     # --------------------------------------------------------
 
+    cross_chart = chart_date_control(
+        cross,
+        key="cross_market"
+    )
+
     st.plotly_chart(
         line_chart(
-            cross,
+            cross_chart,
             list(cross.columns),
             f"{cp_type} CP − {benchmark}",
             "Basis points",
@@ -1000,9 +1140,22 @@ elif page == "Cross-Market Funding":
         ] = rates[cp_col]
 
 
+    # Match the level chart to the already selected
+    # cross-market display interval.
+    if len(cross_chart):
+        chart_start = cross_chart.index.min()
+        chart_end = cross_chart.index.max()
+
+        level_chart = level_panel.loc[
+            (level_panel.index >= chart_start)
+            & (level_panel.index <= chart_end)
+        ]
+    else:
+        level_chart = level_panel.iloc[0:0]
+
     st.plotly_chart(
         line_chart(
-            level_panel,
+            level_chart,
             list(level_panel.columns),
             f"{cp_type} vs {benchmark}",
             "Rate (%)",
@@ -1076,9 +1229,14 @@ elif page == "Persistence":
     # AR CHART
     # --------------------------------------------------------
 
+    persistence_chart = chart_date_control(
+        cp,
+        key="persistence"
+    )
+
     st.plotly_chart(
         line_chart(
-            cp,
+            persistence_chart,
             [ar_col, ar3_col],
             f"{maturity} Rolling AR(1)",
             "AR(1)",
@@ -1094,7 +1252,7 @@ elif page == "Persistence":
 
     st.plotly_chart(
         line_chart(
-            cp,
+            persistence_chart,
             [hl_col, hl3_col],
             f"{maturity} Rolling AR(1)-Implied Mean-Reversion Half-Life",
             "Observations",

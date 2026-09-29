@@ -61,7 +61,12 @@ st.markdown("""
 # ============================================================
 
 @st.cache_data
-def load_data():
+def load_data(data_version="v2.0-calendar-window"):
+
+    # data_version intentionally participates in Streamlit's
+    # cache key. Increment whenever production data schemas
+    # or methodology change.
+
 
     rates = pd.read_csv(
         DATA / "raw_rates.csv",
@@ -100,6 +105,70 @@ def load_data():
     with open(DATA / "metadata.json", "r") as f:
         metadata = json.load(f)
 
+    # --------------------------------------------------------
+    # PRODUCTION SCHEMA VALIDATION
+    # --------------------------------------------------------
+
+    required_cp = {
+        "Maturity",
+        "Date",
+        "Spread_bp",
+        "Z_1Y",
+        "Z_3Y",
+        "Pct_1Y",
+        "Vol_63obs",
+        "AR1_1Y",
+        "HalfLife_1Y_obs",
+        "AR1_3Y",
+        "HalfLife_3Y_obs",
+        "Regime"
+    }
+
+    required_spreads = {
+        "Spread",
+        "End",
+        "Current_bp",
+        "Full_Percentile",
+        "Pct_1Y",
+        "Z_Full",
+        "Z_1Y",
+        "AR1_1Y",
+        "HalfLife_1Y_obs",
+        "ADF_p",
+        "Regime"
+    }
+
+    required_monitor = {
+        "CP_Stress_Composite",
+        "CP_30D_AR1_1Y",
+        "CP_30D_HalfLife_1Y_obs",
+        "CP_60D_AR1_1Y",
+        "CP_60D_HalfLife_1Y_obs",
+        "CP_90D_AR1_1Y",
+        "CP_90D_HalfLife_1Y_obs"
+    }
+
+    missing_cp = required_cp - set(latest_cp.columns)
+    missing_spreads = required_spreads - set(latest_spreads.columns)
+    missing_monitor = required_monitor - set(cp.columns)
+
+    if missing_cp:
+        raise RuntimeError(
+            f"latest_cp.csv schema mismatch: {sorted(missing_cp)}"
+        )
+
+    if missing_spreads:
+        raise RuntimeError(
+            "latest_spreads.csv schema mismatch: "
+            f"{sorted(missing_spreads)}"
+        )
+
+    if missing_monitor:
+        raise RuntimeError(
+            "cp_monitor.csv schema mismatch: "
+            f"{sorted(missing_monitor)}"
+        )
+
     return (
         rates,
         spreads,
@@ -121,7 +190,7 @@ def load_data():
     latest_cp,
     quality,
     metadata
-) = load_data()
+) = load_data("v2.0-calendar-window-20260930")
 
 
 # ============================================================

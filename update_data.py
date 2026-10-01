@@ -81,7 +81,7 @@ for n in pairs:
 pd.DataFrame(ls)[["Spread","Start","End","Current_bp","Observations","Full_Percentile","Z_Full","AR1_Full","HalfLife_Full_obs","ADF_p","Start_1Y","Obs_1Y","Pct_1Y","Z_1Y","AR1_1Y","HalfLife_1Y_obs","Start_3Y","Obs_3Y","Pct_3Y","Z_3Y","AR1_3Y","HalfLife_3Y_obs","Regime"]].to_csv(DATA/"latest_spreads.csv",index=False)
 
 credit=pd.DataFrame({t:sp[f"A2P2-AA_NF_{t}"] for t in ["30D","60D","90D"]}).ffill(limit=5)
-cp=pd.DataFrame(index=rates.index)
+cp=pd.DataFrame(index=credit.index)
 for t in ["30D","60D","90D"]:
     x=credit[t]; cp[f"CP_Credit_{t}"]=x
     z1=[];z3=[];ze=[];pct=[];a1=[];h1=[];a3=[];h3=[]

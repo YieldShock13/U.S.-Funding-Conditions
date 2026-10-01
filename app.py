@@ -442,7 +442,7 @@ st.sidebar.caption(
 # HEADER
 # ============================================================
 
-st.image("https://raw.githubusercontent.com/YieldShock13/U.S.-Funding-Conditions/main/assets/orcas_capital_strategies_ribbon.png", use_container_width=True)
+st.image("assets/orcas_capital_strategies_ribbon.webp", width="stretch")
 
 st.caption(
     "Short-term funding, repo-market basis, commercial-paper "

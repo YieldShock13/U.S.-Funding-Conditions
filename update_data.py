@@ -16,7 +16,10 @@ def fred(sid,name):
     return d.set_index("Date")[[name]]
 
 def nyfed(cat,typ,name):
-    u=f"https://markets.newyorkfed.org/api/rates/{cat}/{typ}/search.json?startDate=2000-01-01&endDate={TODAY}&type=rate"
+    # Pull only the recent NY Fed window on each run. This avoids large-query
+    # pagination/truncation while the committed history remains the base.
+    start=(pd.Timestamp.utcnow().normalize()-pd.Timedelta(days=45)).date().isoformat()
+    u=f"https://markets.newyorkfed.org/api/rates/{cat}/{typ}/search.json?startDate={start}&endDate={TODAY}&type=rate"
     r=requests.get(u,timeout=60); r.raise_for_status(); p=r.json(); rec=p.get("refRates",p.get("rates",p))
     if isinstance(rec,dict): rec=rec.get("rates",rec.get("refRates",[]))
     rows=[]
@@ -24,7 +27,9 @@ def nyfed(cat,typ,name):
         dt=x.get("effectiveDate") or x.get("date"); val=x.get("percentRate") if x.get("percentRate") is not None else x.get("rate")
         if dt is not None and val is not None: rows.append((dt,val))
     d=pd.DataFrame(rows,columns=["Date",name]); d["Date"]=pd.to_datetime(d["Date"]); d[name]=pd.to_numeric(d[name],errors="coerce")
-    return d.dropna().drop_duplicates("Date",keep="last").set_index("Date")
+    d=d.dropna().drop_duplicates("Date",keep="last").set_index("Date").sort_index()
+    if d.empty: raise RuntimeError(f"{name}: NY Fed returned no recent data")
+    return d
 
 def merge_series(old,new,col):
     s=pd.concat([old[[col]],new]).sort_index()

@@ -60,7 +60,7 @@ st.markdown("""
 # DATA LOADERS
 # ============================================================
 
-@st.cache_data
+@st.cache_data(ttl=900)
 def load_data(data_version="v2.0-calendar-window"):
 
     # data_version intentionally participates in Streamlit's

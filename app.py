@@ -442,7 +442,20 @@ st.sidebar.caption(
 # HEADER
 # ============================================================
 
-st.image("assets/orcas_funding_header.jpg", use_container_width=True)
+st.markdown("""
+<div style="width:100%;height:210px;border-radius:10px;overflow:hidden;position:relative;background:
+radial-gradient(circle at 12% 54%,rgba(56,170,255,.32) 0 1px,transparent 2px) 0 0/13px 13px,
+radial-gradient(ellipse at 88% 55%,rgba(47,151,235,.22),transparent 38%),
+linear-gradient(105deg,#020d18 0%,#061827 46%,#020b15 100%);border:1px solid rgba(85,175,255,.16);box-shadow:0 10px 30px rgba(0,0,0,.22);">
+  <div style="position:absolute;left:4%;top:24%;font-size:54px;filter:drop-shadow(0 0 16px rgba(64,174,255,.45));">◕</div>
+  <div style="position:absolute;left:10%;top:31%;width:18%;height:42%;border-top:3px solid #55baff;border-radius:50%;transform:rotate(-8deg);opacity:.72;"></div>
+  <div style="position:absolute;left:31%;top:19%;height:62%;width:1px;background:linear-gradient(transparent,#6c8499,transparent);"></div>
+  <div style="position:absolute;left:35%;top:20%;color:#f3f7fb;font-family:Georgia,serif;font-size:52px;letter-spacing:8px;line-height:1;">ORCA'S</div>
+  <div style="position:absolute;left:35.3%;top:50%;color:#5bb8ff;font-family:Arial,sans-serif;font-size:17px;letter-spacing:10px;">CAPITAL STRATEGIES</div>
+  <div style="position:absolute;left:35.3%;top:68%;color:#9eb2c5;font-family:Arial,sans-serif;font-size:14px;letter-spacing:4px;">U.S. FUNDING CONDITIONS</div>
+  <div style="position:absolute;right:-4%;bottom:-48%;width:48%;height:105%;border-top:2px solid rgba(72,176,255,.42);border-radius:50%;box-shadow:0 -12px 45px rgba(40,151,235,.16);transform:rotate(-5deg);"></div>
+</div>
+""", unsafe_allow_html=True)
 
 st.caption(
     "Short-term funding, repo-market basis, commercial-paper "

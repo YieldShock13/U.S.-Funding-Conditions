@@ -457,11 +457,6 @@ linear-gradient(105deg,#020d18 0%,#061827 46%,#020b15 100%);border:1px solid rgb
 </div>
 """, unsafe_allow_html=True)
 
-st.caption(
-    "Short-term funding, repo-market basis, commercial-paper "
-    "credit conditions and persistence."
-)
-
 
 # ============================================================
 # OVERVIEW

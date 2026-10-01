@@ -442,7 +442,7 @@ st.sidebar.caption(
 # HEADER
 # ============================================================
 
-st.image("assets/orcas_capital_strategies_ribbon.webp", width="stretch")
+st.image("assets/orcas_funding_header.jpg", use_container_width=True)
 
 st.caption(
     "Short-term funding, repo-market basis, commercial-paper "

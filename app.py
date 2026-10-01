@@ -442,7 +442,7 @@ st.sidebar.caption(
 # HEADER
 # ============================================================
 
-st.title("U.S. Funding Conditions")
+st.image("assets/orcas_capital_strategies_ribbon.jpg", use_container_width=True)
 
 st.caption(
     "Short-term funding, repo-market basis, commercial-paper "
